@@ -38,6 +38,7 @@ public abstract class Scope {
 	public final static int CLASS_SCOPE = 3;
 	public final static int COMPILATION_UNIT_SCOPE = 4;
 	public final static int METHOD_SCOPE = 2;
+	public final static int LAMBDA_SCOPE = 5;
 
 	/* Argument Compatibilities */
 	public final static int NOT_COMPATIBLE = -1;
@@ -1717,6 +1718,7 @@ public abstract class Scope {
 				ReferenceBinding foundActualReceiverType = null;
 				done : while (true) { // done when a COMPILATION_UNIT_SCOPE is found
 					switch (scope.kind) {
+						case LAMBDA_SCOPE :
 						case METHOD_SCOPE :
 							MethodScope methodScope = (MethodScope) scope;
 							insideStaticContext |= methodScope.isStatic;

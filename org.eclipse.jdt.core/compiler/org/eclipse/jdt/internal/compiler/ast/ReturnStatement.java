@@ -259,11 +259,14 @@ public void resolve(BlockScope scope) {
 	MethodScope methodScope = scope.methodScope();
 	MethodBinding methodBinding;
 	TypeBinding methodType =
+		(methodScope instanceof LambdaScope) ? ((LambdaScope)methodScope).expectedResultType() : 
 		(methodScope.referenceContext instanceof AbstractMethodDeclaration)
 			? ((methodBinding = ((AbstractMethodDeclaration) methodScope.referenceContext).binding) == null
 				? null
 				: methodBinding.returnType)
 			: TypeBinding.VOID;
+
+			
 	TypeBinding expressionType;
 	if (methodType == TypeBinding.VOID) {
 		// the expression should be null

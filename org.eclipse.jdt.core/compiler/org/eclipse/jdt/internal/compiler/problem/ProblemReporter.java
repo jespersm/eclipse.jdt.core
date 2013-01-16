@@ -2769,6 +2769,22 @@ public void lambdaExpressionsNotBelow18(LambdaExpression lexp) {
 			lexp.sourceStart,
 			lexp.sourceEnd);
 }
+public void polyExpressionInIllegalContext(LambdaExpression lexp) {
+	this.handle(
+			IProblem.PolyExpressionInIllegalContext,
+			NoArgument,
+			NoArgument,
+			lexp.sourceStart,
+			lexp.sourceEnd);
+}
+public void targetTypeIsNotAFunctionalInterface(LambdaExpression lexp) {
+	this.handle(
+			IProblem.TargetTypeIsNotAFunctionalInterface,
+			NoArgument,
+			NoArgument,
+			lexp.sourceStart,
+			lexp.sourceEnd);
+}
 public void illegalVisibilityModifierCombinationForField(ReferenceBinding type, FieldDeclaration fieldDecl) {
 	String[] arguments = new String[] {new String(fieldDecl.name)};
 	this.handle(

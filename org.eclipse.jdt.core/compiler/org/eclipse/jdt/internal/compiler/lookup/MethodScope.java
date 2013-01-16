@@ -63,12 +63,16 @@ public class MethodScope extends BlockScope {
 	// remember suppressed warning re missing 'default:' to give hints on possibly related flow problems
 	public boolean hasMissingSwitchDefault; // TODO(stephan): combine flags to a bitset?
 
-public MethodScope(ClassScope parent, ReferenceContext context, boolean isStatic) {
-	super(METHOD_SCOPE, parent);
+protected MethodScope(int type, Scope parent, ReferenceContext context, boolean isStatic) {
+	super(type, parent);
 	this.locals = new LocalVariableBinding[5];
 	this.referenceContext = context;
 	this.isStatic = isStatic;
 	this.startIndex = 0;
+}
+
+public MethodScope(ClassScope parent, ReferenceContext context, boolean isStatic) {
+	this(METHOD_SCOPE, parent, context, isStatic);
 }
 
 String basicToString(int tab) {

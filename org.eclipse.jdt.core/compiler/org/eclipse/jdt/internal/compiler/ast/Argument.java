@@ -27,6 +27,7 @@ public class Argument extends LocalDeclaration {
 
 	// prefix for setter method (to recognize special hiding argument)
 	private final static char[] SET = "set".toCharArray(); //$NON-NLS-1$
+	private TypeBinding elidedType;
 
 	public Argument(char[] name, long posNom, TypeReference tr, int modifiers) {
 
@@ -133,6 +134,14 @@ public class Argument extends LocalDeclaration {
 		return print(indent, output).append(';');
 	}
 
+	public void resolve(BlockScope scope) {
+		// we should have the binding already
+		if ((this.bits & IsTypeElided) != 0) {
+			resolveToType(scope, this.elidedType);
+		} else {
+			super.resolve(scope);
+		}
+	}
 	public TypeBinding resolveForCatch(BlockScope scope) {
 		// resolution on an argument of a catch clause
 		// provide the scope with a side effect : insertion of a LOCAL
@@ -212,5 +221,15 @@ public class Argument extends LocalDeclaration {
 				this.type.traverse(visitor, scope);
 		}
 		visitor.endVisit(this, scope);
+	}
+
+	public void setElidedType(TypeBinding typeBinding) {
+		if ((this.bits & IsTypeElided) != 0) {
+			this.elidedType = typeBinding;
+		}
+	}
+	
+	public TypeBinding elidedType() {
+		return this.elidedType;
 	}
 }

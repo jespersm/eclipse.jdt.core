@@ -218,8 +218,14 @@ public FlowInfo analyseCode(BlockScope currentScope, FlowContext flowContext, Fl
 
 		// create a binding and add it to the scope
 		TypeBinding variableType = this.type.resolveType(scope, true /* check bounds*/);
+		resolveToType(scope, variableType);
+	}
+	
+	protected void resolveToType(BlockScope scope, TypeBinding variableType) {
 
-		this.bits |= (this.type.bits & ASTNode.HasTypeAnnotations);
+		if (this.type != null) {
+			this.bits |= (this.type.bits & ASTNode.HasTypeAnnotations);
+		}
 		checkModifiers();
 		if (variableType != null) {
 			if (variableType == TypeBinding.VOID) {

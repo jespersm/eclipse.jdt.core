@@ -1340,6 +1340,11 @@ void setSourceStart(int sourceStart);
 	/** @since 3.9 */
 	int IllegalArrayOfUnionType = TypeRelated + 662;
 
+	/** @since 3.9 */
+	int PolyExpressionInIllegalContext = TypeRelated + 663;
+	/** @since 3.9 */
+	int TargetTypeIsNotAFunctionalInterface = TypeRelated + 664;
+	
 	/**
 	 * Corrupted binaries
 	 */
