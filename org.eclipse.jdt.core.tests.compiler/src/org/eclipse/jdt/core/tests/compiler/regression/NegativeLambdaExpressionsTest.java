@@ -266,6 +266,28 @@ public void ignoredTest010() { // awaits implementation of resolution of target 
 				"----------\n");
 }
 
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=381121,  [] should be accepted in reference expressions.
+public void test010() {
+	this.runNegativeTest(
+			new String[] {
+					"X.java",
+					"interface I {\n" +
+					"	Object foo(int [] ia);\n" +
+					"}\n" +
+					"public class X {\n" +
+					"	I i = (int [] ia) -> ia.clone();\n" +
+					"	I i2 = int[]::clone;\n" +
+					"	Zork z;\n" +
+					"}\n",
+				},
+				"----------\n" + 
+				"1. ERROR in X.java (at line 7)\n" + 
+				"	Zork z;\n" + 
+				"	^^^^\n" + 
+				"Zork cannot be resolved to a type\n" + 
+				"----------\n");
+}
+
 public static Class testClass() {
 	return NegativeLambdaExpressionsTest.class;
 }
