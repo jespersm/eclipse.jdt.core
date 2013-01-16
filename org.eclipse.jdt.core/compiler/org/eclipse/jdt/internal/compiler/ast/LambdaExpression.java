@@ -40,18 +40,17 @@ public class LambdaExpression extends NullLiteral {  // For the time being.
 	}
 
 	public TypeBinding resolveType(BlockScope blockScope) {
+		if (this.scope == null) {
+			this.scope = new LambdaScope(blockScope, this);
+		}
 		if (this.expectedType == null) {
 			this.scope.problemReporter().polyExpressionInIllegalContext(this);
 		}
 		this.singleMethod = resolveFunctionalMethod(this.arguments != null ? this.arguments.length : 0);
-		if (this.scope == null && this.body != null) {
-			this.scope = new LambdaScope(blockScope, this);
-		}
 		if (this.arguments != null) {
 			for (int i = 0, length = this.arguments.length; i < length; i++) {
 				this.arguments[i].setElidedType(this.singleMethod.parameters[i]);
 				this.arguments[i].resolve(this.scope);
-//				this.scope.addLocalVariable(this.arguments[i].binding);
 			}
 		}
 		// Must examine poly-type and pick the right one
@@ -71,7 +70,7 @@ public class LambdaExpression extends NullLiteral {  // For the time being.
 		ReferenceBinding referenceBinding = (ReferenceBinding)this.expectedType;
 		MethodBinding methods[] = referenceBinding.methods();
 		
-		if (methods.length != 1) {
+		if (methods == null || methods.length != 1) {
 			this.scope.problemReporter().polyExpressionInIllegalContext(this);
 			return null;
 		}

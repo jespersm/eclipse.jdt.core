@@ -166,11 +166,11 @@ public void test006() {
 			"----------\n");
 }
 // https://bugs.eclipse.org/bugs/show_bug.cgi?id=383096, NullPointerException with a wrong lambda code snippet
-public void _test007() {
+public void test007() {
 	this.runNegativeTest(
 			new String[] {
 					"X.java",
-					"interface I {}\n" +
+					"interface I { int a(int a); }\n" +
 					"public class X {\n" +
 					"    void foo() {\n" +
 					"            I t1 = f -> {{};\n" +
@@ -181,9 +181,9 @@ public void _test007() {
 				},
 			"----------\n" + 
 			"1. ERROR in X.java (at line 6)\n" + 
-			"	int\n" + 
-			"	^^^\n" + 
-			"Syntax error on token \"int\", delete this token\n" + 
+			"	} \n" + 
+			"	^\n" + 
+			"Syntax error, insert \";\" to complete BlockStatements\n" + 
 			"----------\n" /* expected compiler log */,
 			true /* perform statement recovery */);
 }
