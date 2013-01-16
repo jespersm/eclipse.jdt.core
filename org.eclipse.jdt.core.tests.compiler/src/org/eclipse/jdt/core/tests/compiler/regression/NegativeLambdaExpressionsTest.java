@@ -288,6 +288,42 @@ public void test010B() {
 				"----------\n");
 }
 
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=382727,  Lambda expression parameters and locals cannot shadow variables from context
+public void test011() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"interface I {\r\n" + 
+			"  void foo(int x, int y);\r\n" + 
+			"}\r\n" + 
+			"public class X {\r\n" + 
+			"  public static void main(String[] args) {\r\n" + 
+			"    int x, y;\r\n" + 
+			"    I i = (x, y) -> { // Error: x,y being redeclared\r\n" + 
+			"      int args = 10; //  Error args is being redeclared\r\n" + 
+			"    };\r\n" + 
+			"  }\r\n" + 
+			"}"}, 
+			"----------\n" +
+			"1. ERROR in X.java (at line 7)\r\n" + 
+			"	I i = (x, y) -> { // Error: x,y being redeclared\r\n" + 
+			"	       ^\r\n" + 
+			"Duplicate local variable x\r\n" + 
+			"----------\r\n" + 
+			"2. ERROR in X.java (at line 7)\r\n" + 
+			"	I i = (x, y) -> { // Error: x,y being redeclared\r\n" + 
+			"	          ^\r\n" + 
+			"Duplicate local variable y\r\n" + 
+			"----------\r\n" + 
+			"3. ERROR in X.java (at line 8)\r\n" + 
+			"	int args = 10; //  Error args is being redeclared\r\n" + 
+			"	    ^^^^\r\n" + 
+			"Duplicate local variable args\r\n" + 
+			"" +
+			"----------\n");
+				
+}
+
 public static Class testClass() {
 	return NegativeLambdaExpressionsTest.class;
 }
