@@ -324,6 +324,32 @@ public void test011() {
 				
 }
 
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=382701,  Implement semantic analysis of Lambda expressions & Reference expressions
+public void test012() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"interface I {\r\n" + 
+			"  int foo(int x, int y);\r\n" + 
+			"}\r\n" + 
+			"public class X {\r\n" + 
+			"  public static void main(String[] args) {\r\n" + 
+			"    int x = 2;\r\n" + 
+			"    I i = (a, b) -> {\r\n" + 
+			"      return 42.0 + a + args.length; // Type mismatch: cannot convert from double to int\r\n" + 
+			"    };\r\n" + 
+			"  }\r\n" + 
+			"}"},
+			"----------\n" + 
+			"1. ERROR in X.java (at line 8)\n" + 
+			"	return 42.0 + a + args.length; // Type mismatch: cannot convert from double to int\n" + 
+			"	       ^^^^^^^^^^^^^^^^^^^^^^\n" + 
+			"Type mismatch: cannot convert from double to int\n" + 
+			"----------\n");
+				
+}
+
+
 public static Class testClass() {
 	return NegativeLambdaExpressionsTest.class;
 }
