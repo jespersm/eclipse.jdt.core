@@ -243,7 +243,7 @@ public void test009() {
 }
 
 //https://bugs.eclipse.org/bugs/show_bug.cgi?id=381121,  [] should be accepted in reference expressions.
-public void ignoredTest010() { // awaits implementation of resolution of target types before return can be checked
+public void test010A() { // awaits implementation of resolution of target types before return can be checked
 	this.runNegativeTest(
 			new String[] {
 					"X.java",
@@ -267,7 +267,7 @@ public void ignoredTest010() { // awaits implementation of resolution of target 
 }
 
 //https://bugs.eclipse.org/bugs/show_bug.cgi?id=381121,  [] should be accepted in reference expressions.
-public void test010() {
+public void test010B() {
 	this.runNegativeTest(
 			new String[] {
 					"X.java",
