@@ -150,6 +150,13 @@ public void test006() {
 	this.runNegativeTest(
 			new String[] {
 				"X.java",
+				"interface One{}\n" +
+				"interface Two{}\n" +
+				"interface Three{}\n" +
+				"interface Four{}\n" +
+				"interface Five{}\n" +
+				"interface Blah{}\n" +
+				"interface Outer<T1,T2>{interface Inner<T3,T4>{interface Leaf{ <T> void method(); } } }\n" +
 				"interface IX{\n" +
 				"	public void foo();\n" +
 				"}\n" +
@@ -159,7 +166,7 @@ public void test006() {
 				"}\n",
 			},
 			"----------\n" + 
-			"1. ERROR in X.java (at line 6)\n" + 
+			"1. ERROR in X.java (at line 13)\n" + 
 			"	int x\n" + 
 			"	    ^\n" + 
 			"Syntax error, insert \";\" to complete FieldDeclaration\n" + 
@@ -349,6 +356,55 @@ public void test012() {
 				
 }
 
+// https://bugs.eclipse.org/bugs/show_bug.cgi?id=384687 [1.8] Wildcard type arguments should be rejected for lambda and reference expressions
+public void test013A() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"class Action<K> {\r\n" + 
+			"  static <T1> int fooMethod(Object x) { return 0; }\r\n" + 
+			"}\r\n" + 
+			"interface I {\r\n" + 
+			"  int foo(Object x);\r\n" + 
+			"}\r\n" + 
+			"public class X {\r\n" + 
+			"  public static void main(String[] args) {\r\n" + 
+			"    I functional = Action::<?>fooMethod;\r\n" + 
+			"  }\r\n" + 
+			"}"},
+			"----------\n" + 
+			"1. ERROR in X.java (at line 9)\n" + 
+			"	I functional = Action::<?>fooMethod;\n" + 
+			"	                        ^\n" + 
+			"Wildcard is not allowed at this location\n" + 
+			"----------\n");
+}
+
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=384687 [1.8] Wildcard type arguments should be rejected for lambda and reference expressions
+public void test013B() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"class Action<K> {\r\n" + 
+			"  int foo(Object x, Object y, Object z) { return 0; }\r\n" + 
+			"}\r\n" + 
+			"interface I {\r\n" + 
+			"  void foo(Object x);\r\n" + 
+			"}\r\n" + 
+			"public class X {\r\n" + 
+			"  public static void main(String[] args) {\r\n" + 
+			"    Action<Object> exp = new Action<Object>();\r\n" + 
+			"    int x,y,z;\r\n" + 
+			"    I len6 = foo->exp.<?>method(x, y, z);\r\n" + 
+			"  }\r\n" + 
+			"}"},
+			"----------\n" + 
+			"1. ERROR in X.java (at line 11)\n" + 
+			"	I len6 = foo->exp.<?>method(x, y, z);\n" + 
+			"	                   ^\n" + 
+			"Wildcard is not allowed at this location\n" + 
+			"----------\n");
+}
 
 public static Class testClass() {
 	return NegativeLambdaExpressionsTest.class;

@@ -47,7 +47,7 @@ public class LambdaExpression extends NullLiteral {  // For the time being.
 			this.scope.problemReporter().polyExpressionInIllegalContext(this);
 		}
 		this.singleMethod = resolveFunctionalMethod(this.arguments != null ? this.arguments.length : 0);
-		if (this.arguments != null) {
+		if (this.arguments != null && this.singleMethod != null) {
 			for (int i = 0, length = this.arguments.length; i < length; i++) {
 				this.arguments[i].setElidedType(this.singleMethod.parameters[i]);
 				this.arguments[i].resolve(this.scope);

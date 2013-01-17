@@ -15,6 +15,10 @@
 
 package org.eclipse.jdt.internal.compiler.ast;
 
+import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
+import org.eclipse.jdt.internal.compiler.lookup.BlockScope;
+import org.eclipse.jdt.internal.compiler.lookup.TypeBinding;
+
 public class ReferenceExpression extends NullLiteral { // For the time being.
 	
 	protected NameReference name;
@@ -24,6 +28,7 @@ public class ReferenceExpression extends NullLiteral { // For the time being.
 	protected TypeReference [] typeArguments;
 	
 	protected SingleNameReference method; // == null ? "::new" : "::method"
+	private TypeBinding[] genericTypeArguments;
 	
 	public ReferenceExpression(NameReference name, TypeReference[] typeArguments, int sourceEnd) {
 		super(name.sourceStart, sourceEnd);
@@ -93,4 +98,24 @@ public class ReferenceExpression extends NullLiteral { // For the time being.
 	public boolean isMethodReference() {
 		return this.method != null;
 	}
+	
+	public TypeBinding resolveType(BlockScope scope) {
+		// resolve type arguments (for generic constructor call)
+		if (this.typeArguments != null) {
+			int length = this.typeArguments.length;
+			boolean argHasError = scope.compilerOptions().sourceLevel < ClassFileConstants.JDK1_5; // typeChecks all arguments
+			this.genericTypeArguments = new TypeBinding[length];
+			for (int i = 0; i < length; i++) {
+				TypeReference typeReference = this.typeArguments[i];
+				if ((this.genericTypeArguments[i] = typeReference.resolveType(scope, true /* check bounds*/)) == null) {
+					argHasError = true;
+				}
+				if (argHasError && typeReference instanceof Wildcard) {
+					scope.problemReporter().illegalUsageOfWildcard(typeReference);
+				}
+			}
+		}
+		return super.resolveType(scope);
+	}
+	
 }
