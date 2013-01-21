@@ -181,7 +181,7 @@ public void test007() {
 					"public class X {\n" +
 					"    void foo() {\n" +
 					"            I t1 = f -> {{};\n" +
-					"            I t2 = () -> 42;\n" +
+					"            I t2 = (x) -> 42;\n" +
 					"        } \n" +
 					"        }\n" +
 					"}\n",
@@ -250,7 +250,7 @@ public void test009() {
 }
 
 //https://bugs.eclipse.org/bugs/show_bug.cgi?id=381121,  [] should be accepted in reference expressions.
-public void test010A() { // awaits implementation of resolution of target types before return can be checked
+public void test010A() {
 	this.runNegativeTest(
 			new String[] {
 					"X.java",
@@ -403,6 +403,43 @@ public void test013B() {
 			"	I len6 = foo->exp.<?>method(x, y, z);\n" + 
 			"	                   ^\n" + 
 			"Wildcard is not allowed at this location\n" + 
+			"----------\n");
+}
+
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=382702 - [1.8][compiler] Lambda expressions should be rejected in disallowed contexts
+public void test014() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"interface I {\r\n" + 
+			"  int foo1(String x);\r\n" + 
+			"}\r\n" + 
+			"public class X {\r\n" + 
+			"  public static void main(String[] args) {\r\n" +
+			"    System.out.println(\"Lambda in illegal context: \" + (() -> \"Illegal Lambda\"));\r\n" +
+			"    System.out.println(\"Method Reference in illegal context: \" + System::exit);\r\n" +
+			"    System.out.println(\"Constructor Reference in illegal context: \" + String::new);\r\n" +
+			"    I sam1 = (x) -> x.length(); // OK\r\n" +
+			"    I sam2 = ((String::length)); // OK\r\n" +
+			"    I sam3 = (Math.random() > 0.5) ? String::length : String::hashCode; // OK\r\n" +
+			"    I sam4 = (I)(String::length); // OK\r\n" +
+			"  }\r\n" + 
+			"}"},
+			"----------\n" + 
+			"1. ERROR in X.java (at line 6)\n" + 
+			"	System.out.println(\"Lambda in illegal context: \" + (() -> \"Illegal Lambda\"));\n" + 
+			"	                                                   ^^^^^^^^^^^^^^^^^^^^^^^^\n" + 
+			"Functional expressions may not be used here (only allowed in assignments, casts, and as parameters)\n" + 
+			"----------\n" + 
+			"2. ERROR in X.java (at line 7)\n" + 
+			"	System.out.println(\"Method Reference in illegal context: \" + System::exit);\n" + 
+			"	                                                             ^^^^^^^^^^^^\n" + 
+			"Functional expressions may not be used here (only allowed in assignments, casts, and as parameters)\n" + 
+			"----------\n" + 
+			"3. ERROR in X.java (at line 8)\n" + 
+			"	System.out.println(\"Constructor Reference in illegal context: \" + String::new);\n" + 
+			"	                                                                  ^^^^^^^^^^^^\n" + 
+			"Functional expressions may not be used here (only allowed in assignments, casts, and as parameters)\n" + 
 			"----------\n");
 }
 
