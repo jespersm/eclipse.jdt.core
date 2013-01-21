@@ -166,6 +166,8 @@ public TypeBinding resolveType(BlockScope scope) {
 		return null;
 	}
 	TypeBinding lhsType = this.lhs.resolveType(scope);
+	this.expression.allowFunctionalInterface(); // needed to flag that lambdas are OK here
+
 	this.expression.setExpectedType(lhsType); // needed in case of generic method invocation
 	if (lhsType != null) {
 		this.resolvedType = lhsType.capture(scope, this.sourceEnd);

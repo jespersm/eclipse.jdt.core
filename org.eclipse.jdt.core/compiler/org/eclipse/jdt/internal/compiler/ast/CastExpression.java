@@ -495,6 +495,10 @@ public TypeBinding resolveType(BlockScope scope) {
 
 	TypeBinding castType = this.resolvedType = this.type.resolveType(scope);
 	//expression.setExpectedType(this.resolvedType); // needed in case of generic method invocation
+	if (this.expression instanceof FunctionalLiteral) {
+		this.expression.allowFunctionalInterface();
+		this.expression.setExpectedType(this.resolvedType); // needed for checking lambdas and references
+	}
 	if (this.expression instanceof CastExpression) {
 		this.expression.bits |= ASTNode.DisableUnnecessaryCastCheck;
 		exprContainCast = true;

@@ -17,9 +17,10 @@ package org.eclipse.jdt.internal.compiler.ast;
 
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants;
 import org.eclipse.jdt.internal.compiler.lookup.BlockScope;
+import org.eclipse.jdt.internal.compiler.lookup.MethodBinding;
 import org.eclipse.jdt.internal.compiler.lookup.TypeBinding;
 
-public class ReferenceExpression extends NullLiteral { // For the time being.
+public class ReferenceExpression extends FunctionalLiteral {
 	
 	protected NameReference name;
 	protected TypeReference type;
@@ -100,6 +101,12 @@ public class ReferenceExpression extends NullLiteral { // For the time being.
 	}
 	
 	public TypeBinding resolveType(BlockScope scope) {
+		if (checkContext(scope)) {
+			// Check the functional interface
+			MethodBinding method = resolveFunctionalMethod(0, scope.problemReporter());
+			// Must examine poly-type and check if they are compatible
+		}		
+		
 		// resolve type arguments (for generic constructor call)
 		if (this.typeArguments != null) {
 			int length = this.typeArguments.length;

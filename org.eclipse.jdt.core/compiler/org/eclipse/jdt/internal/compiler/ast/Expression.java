@@ -1127,4 +1127,12 @@ public void traverse(ASTVisitor visitor, BlockScope scope) {
 public void traverse(ASTVisitor visitor, ClassScope scope) {
 	// nothing to do
 }
+
+/**
+ * Sets a flag to allow a functional interface at this expression.
+ */
+public void allowFunctionalInterface() {
+	// default is to do nothing
+}
+
 }

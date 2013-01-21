@@ -225,6 +225,7 @@ public void resolve(MethodScope initializationScope) {
 
 			TypeBinding fieldType = this.binding.type;
 			TypeBinding initializationType;
+			this.initialization.allowFunctionalInterface(); // needed to flag that lambdas are OK here
 			this.initialization.setExpectedType(fieldType); // needed in case of generic method invocation
 			if (this.initialization instanceof ArrayInitializer) {
 

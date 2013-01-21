@@ -280,6 +280,7 @@ public void resolve(BlockScope scope) {
 		if (methodType != null) scope.problemReporter().shouldReturn(methodType, this);
 		return;
 	}
+	this.expression.allowFunctionalInterface(); // needed to flag that lambdas are OK here
 	this.expression.setExpectedType(methodType); // needed in case of generic method invocation
 	if ((expressionType = this.expression.resolveType(scope)) == null) return;
 	if (expressionType == TypeBinding.VOID) {

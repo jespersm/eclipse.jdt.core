@@ -70,6 +70,7 @@ import org.eclipse.jdt.internal.compiler.ast.Expression;
 import org.eclipse.jdt.internal.compiler.ast.FakedTrackingVariable;
 import org.eclipse.jdt.internal.compiler.ast.FieldDeclaration;
 import org.eclipse.jdt.internal.compiler.ast.FieldReference;
+import org.eclipse.jdt.internal.compiler.ast.FunctionalLiteral;
 import org.eclipse.jdt.internal.compiler.ast.ImportReference;
 import org.eclipse.jdt.internal.compiler.ast.Initializer;
 import org.eclipse.jdt.internal.compiler.ast.InstanceOfExpression;
@@ -2769,15 +2770,7 @@ public void lambdaExpressionsNotBelow18(LambdaExpression lexp) {
 			lexp.sourceStart,
 			lexp.sourceEnd);
 }
-public void polyExpressionInIllegalContext(LambdaExpression lexp) {
-	this.handle(
-			IProblem.PolyExpressionInIllegalContext,
-			NoArgument,
-			NoArgument,
-			lexp.sourceStart,
-			lexp.sourceEnd);
-}
-public void targetTypeIsNotAFunctionalInterface(LambdaExpression lexp) {
+public void targetTypeIsNotAFunctionalInterface(FunctionalLiteral lexp) {
 	this.handle(
 			IProblem.TargetTypeIsNotAFunctionalInterface,
 			NoArgument,
@@ -2785,6 +2778,15 @@ public void targetTypeIsNotAFunctionalInterface(LambdaExpression lexp) {
 			lexp.sourceStart,
 			lexp.sourceEnd);
 }
+public void illegalContextForFunctionalExpression(FunctionalLiteral lexp) {
+	this.handle(
+			IProblem.IllegalContextForFunctionalExpression,
+			NoArgument,
+			NoArgument,
+			lexp.sourceStart,
+			lexp.sourceEnd);
+}
+
 public void illegalVisibilityModifierCombinationForField(ReferenceBinding type, FieldDeclaration fieldDecl) {
 	String[] arguments = new String[] {new String(fieldDecl.name)};
 	this.handle(

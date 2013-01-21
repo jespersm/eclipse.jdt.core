@@ -390,6 +390,17 @@ public FlowInfo analyseCode(BlockScope currentScope, FlowContext flowContext,
 		return this.valueIfFalse.printExpression(0, output);
 	}
 
+	public void allowFunctionalInterface() {
+		// Bubble through to both branches
+		this.valueIfTrue.allowFunctionalInterface();
+		this.valueIfFalse.allowFunctionalInterface();
+	}
+	
+	public void setExpectedType(TypeBinding expectedType) {
+		this.valueIfTrue.setExpectedType(expectedType);
+		this.valueIfFalse.setExpectedType(expectedType);
+	}
+
 	public TypeBinding resolveType(BlockScope scope) {
 		// JLS3 15.25
 		this.constant = Constant.NotAConstant;

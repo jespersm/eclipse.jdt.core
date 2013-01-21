@@ -1329,6 +1329,8 @@ void setSourceStart(int sourceStart);
     int IllegalTypeForExplicitThis = Internal + Syntax + 650;
     /** @since 3.9 */
     int IllegalQualifierForExplicitThis = Internal + Syntax + 651;
+    /** @since 3.9 */
+    int IllegalContextForFunctionalExpression = TypeRelated + 652;
     
 	/**
 	 * More problems in generics
@@ -1341,9 +1343,7 @@ void setSourceStart(int sourceStart);
 	int IllegalArrayOfUnionType = TypeRelated + 662;
 
 	/** @since 3.9 */
-	int PolyExpressionInIllegalContext = TypeRelated + 663;
-	/** @since 3.9 */
-	int TargetTypeIsNotAFunctionalInterface = TypeRelated + 664;
+	int TargetTypeIsNotAFunctionalInterface = TypeRelated + 663;
 	
 	/**
 	 * Corrupted binaries

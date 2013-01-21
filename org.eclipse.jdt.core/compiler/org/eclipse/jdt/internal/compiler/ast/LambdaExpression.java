@@ -18,16 +18,13 @@ import org.eclipse.jdt.internal.compiler.ASTVisitor;
 import org.eclipse.jdt.internal.compiler.lookup.BlockScope;
 import org.eclipse.jdt.internal.compiler.lookup.LambdaScope;
 import org.eclipse.jdt.internal.compiler.lookup.MethodBinding;
-import org.eclipse.jdt.internal.compiler.lookup.ReferenceBinding;
 import org.eclipse.jdt.internal.compiler.lookup.TypeBinding;
 
-public class LambdaExpression extends NullLiteral {  // For the time being.
+public class LambdaExpression extends FunctionalLiteral {
 	Argument [] arguments;
 	Statement body;
 	LambdaScope scope;
 	TypeDeclaration typeDeclaration;
-	private TypeBinding expectedType;
-	private MethodBinding singleMethod;
 	
 	public LambdaExpression(Argument [] arguments, Statement body) {
 		super(0, 0);
@@ -35,46 +32,26 @@ public class LambdaExpression extends NullLiteral {  // For the time being.
 		this.body = body;
 	}
 	
-	public void setExpectedType(TypeBinding expectedType) {
-		this.expectedType = expectedType;
-	}
-
 	public TypeBinding resolveType(BlockScope blockScope) {
 		if (this.scope == null) {
 			this.scope = new LambdaScope(blockScope, this);
 		}
-		if (this.expectedType == null) {
-			this.scope.problemReporter().polyExpressionInIllegalContext(this);
-		}
-		this.singleMethod = resolveFunctionalMethod(this.arguments != null ? this.arguments.length : 0);
-		if (this.arguments != null && this.singleMethod != null) {
-			for (int i = 0, length = this.arguments.length; i < length; i++) {
-				this.arguments[i].setElidedType(this.singleMethod.parameters[i]);
-				this.arguments[i].resolve(this.scope);
+		if (checkContext(blockScope)) {
+			int formalArgumentCount = this.arguments != null ? this.arguments.length : 0;
+			MethodBinding method = resolveFunctionalMethod(formalArgumentCount, this.scope.problemReporter());
+			if (this.arguments != null && method != null) {
+				for (int i = 0, length = this.arguments.length; i < length; i++) {
+					this.arguments[i].setElidedType(method.parameters[i]);
+					this.arguments[i].resolve(this.scope);
+				}
 			}
-		}
-		// Must examine poly-type and pick the right one
-		
+			// Must examine poly-type and pick the right one
+		}		
 		if (this.body != null) {
 			this.body.resolve(this.scope);
 		}
 		
 		return super.resolveType(this.scope);
-	}
-	
-	private MethodBinding resolveFunctionalMethod(int numberOfArguments) {
-		if (! (this.expectedType instanceof ReferenceBinding)) {
-			this.scope.problemReporter().polyExpressionInIllegalContext(this);
-			return null;
-		}
-		ReferenceBinding referenceBinding = (ReferenceBinding)this.expectedType;
-		MethodBinding methods[] = referenceBinding.methods();
-		
-		if (methods == null || methods.length != 1) {
-			this.scope.problemReporter().polyExpressionInIllegalContext(this);
-			return null;
-		}
-		return methods[0];
 	}
 
 	public void traverse(
@@ -114,7 +91,4 @@ public class LambdaExpression extends NullLiteral {  // For the time being.
 		return output.append(suffix);
 	}
 
-	public TypeBinding expectedResultType() {
-		return this.singleMethod != null ? this.singleMethod.returnType : null; 
-	}
 }
