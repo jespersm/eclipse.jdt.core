@@ -1342,8 +1342,13 @@ void setSourceStart(int sourceStart);
 	/** @since 3.9 */
 	int IllegalArrayOfUnionType = TypeRelated + 662;
 
+	/**
+	 * Lambda problems
+	 */
 	/** @since 3.9 */
 	int TargetTypeIsNotAFunctionalInterface = TypeRelated + 663;
+	/** @since 3.9 */
+	int LambdaExpressionHasNoEffect = Internal + 664;
 	
 	/**
 	 * Corrupted binaries

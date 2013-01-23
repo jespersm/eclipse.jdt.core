@@ -18,6 +18,7 @@ import org.eclipse.jdt.internal.compiler.ASTVisitor;
 import org.eclipse.jdt.internal.compiler.lookup.BlockScope;
 import org.eclipse.jdt.internal.compiler.lookup.LambdaScope;
 import org.eclipse.jdt.internal.compiler.lookup.MethodBinding;
+import org.eclipse.jdt.internal.compiler.lookup.TagBits;
 import org.eclipse.jdt.internal.compiler.lookup.TypeBinding;
 
 public class LambdaExpression extends FunctionalLiteral {
@@ -36,9 +37,10 @@ public class LambdaExpression extends FunctionalLiteral {
 		if (this.scope == null) {
 			this.scope = new LambdaScope(blockScope, this);
 		}
+		MethodBinding method = null;
 		if (checkContext(blockScope)) {
 			int formalArgumentCount = this.arguments != null ? this.arguments.length : 0;
-			MethodBinding method = resolveFunctionalMethod(formalArgumentCount, this.scope.problemReporter());
+			method = resolveFunctionalMethod(formalArgumentCount, this.scope.problemReporter());
 			if (this.arguments != null && method != null) {
 				for (int i = 0, length = this.arguments.length; i < length; i++) {
 					this.arguments[i].setElidedType(method.parameters[i]);
@@ -48,12 +50,73 @@ public class LambdaExpression extends FunctionalLiteral {
 			// Must examine poly-type and pick the right one
 		}		
 		if (this.body != null) {
-			this.body.resolve(this.scope);
+			if (this.body instanceof Expression) {
+				Expression expression = (Expression) this.body;
+				if (method != null && method.returnType != null) {
+					expression.setExpectedType(method.returnType);
+					TypeBinding expressionType = expression.resolveType(this.scope);
+					checkExpressionResult(method.returnType, expression, expressionType);
+				}
+			} else {
+				// if non-void, check that a value is returned
+				this.body.resolve(this.scope);
+			}
 		}
 		
 		return super.resolveType(this.scope);
 	}
 
+	void checkExpressionResult(TypeBinding lambdaResultType, Expression expression, TypeBinding expressionType) {
+		// this is copied from ReturnStatement::resolve
+		if (lambdaResultType == TypeBinding.VOID) {
+			final boolean mayHaveEffects[] = new boolean[] {false};
+			expression.traverse(new ASTVisitor() {
+				public boolean visit(ArrayAllocationExpression     theExpression, BlockScope unusedScope)	 { return markEffects(); }
+				public boolean visit(AllocationExpression          theExpression, BlockScope unusedScope) { return markEffects(); }
+				public boolean visit(Assignment                    theExpression, BlockScope unusedScope) { return markEffects(); }
+				public boolean visit(CompoundAssignment            theExpression, BlockScope unusedScope) { return markEffects(); }
+				public boolean visit(MessageSend                   theExpression, BlockScope unusedScope) { return markEffects(); }
+				public boolean visit(PostfixExpression             theExpression, BlockScope unusedScope)  { return markEffects(); }
+				public boolean visit(PrefixExpression              theExpression, BlockScope unusedScope)  { return markEffects(); }
+				public boolean visit(QualifiedAllocationExpression theExpression, BlockScope unusedScope) { return markEffects(); }
+
+				private boolean markEffects() {
+					mayHaveEffects[0] = true;
+					return false;
+				}
+			}, this.scope);
+			if (! mayHaveEffects[0]) {
+				this.scope.problemReporter().lambdaExpressionHasNoEffect(expression);
+			}
+			return; // anything goes
+		}
+		if (lambdaResultType != expressionType) // must call before computeConversion() and typeMismatchError()
+			this.scope.compilationUnitScope().recordTypeConversion(lambdaResultType, expressionType);
+		if (expression.isConstantValueOfTypeAssignableToType(expressionType, lambdaResultType)
+				|| expressionType.isCompatibleWith(lambdaResultType)) {
+	
+			expression.computeConversion(this.scope, lambdaResultType, expressionType);
+			if (expressionType.needsUncheckedConversion(lambdaResultType)) {
+			    this.scope.problemReporter().unsafeTypeConversion(expression, expressionType, lambdaResultType);
+			}
+			if (expression instanceof CastExpression
+					&& (expression.bits & (ASTNode.UnnecessaryCast|ASTNode.DisableUnnecessaryCastCheck)) == 0) {
+				CastExpression.checkNeedForAssignedCast(this.scope, lambdaResultType, (CastExpression) expression);
+			}
+			return;
+		} else if (isBoxingCompatible(expressionType, lambdaResultType, expression, this.scope)) {
+			expression.computeConversion(this.scope, lambdaResultType, expressionType);
+			if (expression instanceof CastExpression
+					&& (expression.bits & (ASTNode.UnnecessaryCast|ASTNode.DisableUnnecessaryCastCheck)) == 0) {
+				CastExpression.checkNeedForAssignedCast(this.scope, lambdaResultType, (CastExpression) expression);
+			}			return;
+		}
+		if ((lambdaResultType.tagBits & TagBits.HasMissingType) == 0) {
+			// no need to complain if return type was missing (avoid secondary error : 220967)
+			this.scope.problemReporter().typeMismatchError(expressionType, lambdaResultType, expression, null);
+		}
+	}
+	
 	public void traverse(
 			ASTVisitor visitor,
 			BlockScope blockScope) {

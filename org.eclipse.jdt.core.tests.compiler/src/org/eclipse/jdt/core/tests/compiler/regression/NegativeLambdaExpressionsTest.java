@@ -111,7 +111,7 @@ public void test004() {
 			new String[] {
 				"X.java",
 				"interface IX {\n" +
-				"    public void foo();\n" +
+				"    public int foo();\n" +
 				"}\n" +
 				"public class X {\n" +
 				"     IX i = () -> 42;\n" +
@@ -356,6 +356,7 @@ public void test012() {
 				
 }
 
+
 // https://bugs.eclipse.org/bugs/show_bug.cgi?id=384687 [1.8] Wildcard type arguments should be rejected for lambda and reference expressions
 public void test013A() {
 	this.runNegativeTest(
@@ -441,6 +442,92 @@ public void test014() {
 			"	                                                                  ^^^^^^^^^^^^\n" + 
 			"Functional expressions may not be used here (only allowed in assignments, casts, and as parameters)\n" + 
 			"----------\n");
+}
+
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=398734 - [1.8][compiler] Lambda expression type or return type should be checked against the target functional interface method's result type
+public void test015A() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"interface I {\r\n" + 
+			"  String foo();\r\n" + 
+			"}\r\n" + 
+			"public class X {\r\n" + 
+			"  public static void main(String[] args) {\r\n" + 
+			"    I i = () -> 42;\r\n" + 
+			"    I i2 = () -> \"Hello, Lambda\";\r\n" + 
+			"  }\r\n" + 
+			"}"},
+			"----------\n" + 
+			"1. ERROR in X.java (at line 6)\n" + 
+			"	I i = () -> 42;\n" + 
+			"	            ^^\n" + 
+			"Type mismatch: cannot convert from int to String\n" + 
+			"----------\n");
+}
+
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=398734 - [1.8][compiler] Lambda expression type or return type should be checked against the target functional interface method's result type
+public void test015B() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"interface I {\r\n" + 
+			"  String foo();\r\n" + 
+			"}\r\n" + 
+			"public class X {\r\n" + 
+			"  public static void main(String[] args) {\r\n" + 
+			"    I i = () -> {\r\n" +
+			"      return 42;\r\n" +
+			"    };\r\n" + 
+			"    I i2 = () -> {\r\n" +
+			"      return \"Hello, Lambda as a block!\";\r\n" +
+			"    };\r\n" + 
+			"  }\r\n" + 
+			"}"},
+			"----------\n" + 
+			"1. ERROR in X.java (at line 7)\n" + 
+			"	return 42;\n" + 
+			"	       ^^\n" + 
+			"Type mismatch: cannot convert from int to String\n" + 
+			"----------\n");
+}
+
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=398734 - [1.8][compiler] Lambda expression type or return type should be checked against the target functional interface method's result type
+public void test015C() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"public class X {\r\n" + 
+			"  int data = 0;\r\n" +
+			"  public void makeLambdas() {\r\n" + 
+			"    Runnable r1 = () -> System.out.println(\"side effect\");  // OK\r\n" +
+			"    Runnable r2 = () -> data = 42; // OK, side effect\r\n" +
+			"    Runnable r3 = () -> data++; // OK, side effect\r\n" +
+			"    Runnable r4 = () -> ++data; // OK, side effect\r\n" +
+			"    Runnable r5 = () -> data += 3; // OK, side effect\r\n" +
+			"    Runnable r6 = () -> new X(); // may have side effects\r\n" +
+			"    Runnable r7 = () -> new X(); // may have side effects\r\n" +
+			"    Runnable r8 = () -> \"Dead\";  // Dead: Literal\r\n" +
+			"    Runnable r9 = () -> 2 + 2;  // Dead: No side effects\r\n" +
+			"    Runnable r10 = () -> data; // Dead: Just a field reference\r\n" +
+			"  }\r\n" + 
+			"}"},
+			"----------\n" + 
+				"1. WARNING in X.java (at line 11)\n" + 
+				"	Runnable r8 = () -> \"Dead\";  // Dead: Literal\n" + 
+				"	                    ^^^^^^\n" + 
+				"Lambda expression has no effect and returns void\n" + 
+				"----------\n" + 
+				"2. WARNING in X.java (at line 12)\n" + 
+				"	Runnable r9 = () -> 2 + 2;  // Dead: No side effects\n" + 
+				"	                    ^^^^^\n" + 
+				"Lambda expression has no effect and returns void\n" + 
+				"----------\n" + 
+				"3. WARNING in X.java (at line 13)\n" + 
+				"	Runnable r10 = () -> data; // Dead: Just a field reference\n" + 
+				"	                     ^^^^\n" + 
+				"Lambda expression has no effect and returns void\n" + 
+				"----------\n");
 }
 
 public static Class testClass() {

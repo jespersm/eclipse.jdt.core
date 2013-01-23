@@ -474,7 +474,8 @@ public static int getIrritant(int problemID) {
 			return CompilerOptions.ShouldImplementHashcode;
 			
 		case IProblem.DeadCode:
-			return CompilerOptions.DeadCode;
+		case IProblem.LambdaExpressionHasNoEffect:
+				return CompilerOptions.DeadCode;
 			
 		case IProblem.Task :
 			return CompilerOptions.Tasks;
@@ -2777,6 +2778,14 @@ public void targetTypeIsNotAFunctionalInterface(FunctionalLiteral lexp) {
 			NoArgument,
 			lexp.sourceStart,
 			lexp.sourceEnd);
+}
+public void lambdaExpressionHasNoEffect(Expression exp) {
+	this.handle(
+			IProblem.LambdaExpressionHasNoEffect,
+			NoArgument,
+			NoArgument,
+			exp.sourceStart,
+			exp.sourceEnd);
 }
 public void illegalContextForFunctionalExpression(FunctionalLiteral lexp) {
 	this.handle(
