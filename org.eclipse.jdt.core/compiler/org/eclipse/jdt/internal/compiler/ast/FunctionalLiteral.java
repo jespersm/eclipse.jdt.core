@@ -22,7 +22,7 @@ import org.eclipse.jdt.internal.compiler.problem.ProblemReporter;
 public abstract class FunctionalLiteral extends MagicLiteral {
 
 	private TypeBinding expectedType;
-	private MethodBinding singleMethod;
+	protected MethodBinding targetBinding;
 	private boolean allowedInContext = false;
 	
 	public FunctionalLiteral(int s , int e) {
@@ -66,8 +66,8 @@ public abstract class FunctionalLiteral extends MagicLiteral {
 			reporter.targetTypeIsNotAFunctionalInterface(this);
 			return null;
 		}
-		this.singleMethod = methods[0];
-		return this.singleMethod;
+		this.targetBinding = methods[0];
+		return this.targetBinding;
 	}
 
 	public TypeBinding expectedType() {
@@ -75,13 +75,17 @@ public abstract class FunctionalLiteral extends MagicLiteral {
 	}
 	
 	public TypeBinding expectedResultType() {
-		return this.singleMethod != null ? this.singleMethod.returnType : null; 
+		return this.targetBinding != null ? this.targetBinding.returnType : null; 
 	}
 
 	public TypeBinding literalType(BlockScope blockScope) {
 		return expectedType();
 	}
 
+	public MethodBinding targetBinding() {
+		return targetBinding;
+	}
+	
 	/**
 	 * Code generation for the null literal
 	 *

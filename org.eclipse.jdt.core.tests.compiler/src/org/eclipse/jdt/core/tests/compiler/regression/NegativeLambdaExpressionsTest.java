@@ -513,21 +513,66 @@ public void test015C() {
 			"  }\r\n" + 
 			"}"},
 			"----------\n" + 
-				"1. WARNING in X.java (at line 11)\n" + 
-				"	Runnable r8 = () -> \"Dead\";  // Dead: Literal\n" + 
-				"	                    ^^^^^^\n" + 
-				"Lambda expression has no effect and returns void\n" + 
-				"----------\n" + 
-				"2. WARNING in X.java (at line 12)\n" + 
-				"	Runnable r9 = () -> 2 + 2;  // Dead: No side effects\n" + 
-				"	                    ^^^^^\n" + 
-				"Lambda expression has no effect and returns void\n" + 
-				"----------\n" + 
-				"3. WARNING in X.java (at line 13)\n" + 
-				"	Runnable r10 = () -> data; // Dead: Just a field reference\n" + 
-				"	                     ^^^^\n" + 
-				"Lambda expression has no effect and returns void\n" + 
-				"----------\n");
+			"1. WARNING in X.java (at line 11)\n" + 
+			"	Runnable r8 = () -> \"Dead\";  // Dead: Literal\n" + 
+			"	                    ^^^^^^\n" + 
+			"Lambda expression has no effect and returns void\n" + 
+			"----------\n" + 
+			"2. WARNING in X.java (at line 12)\n" + 
+			"	Runnable r9 = () -> 2 + 2;  // Dead: No side effects\n" + 
+			"	                    ^^^^^\n" + 
+			"Lambda expression has no effect and returns void\n" + 
+			"----------\n" + 
+			"3. WARNING in X.java (at line 13)\n" + 
+			"	Runnable r10 = () -> data; // Dead: Just a field reference\n" + 
+			"	                     ^^^^\n" + 
+			"Lambda expression has no effect and returns void\n" + 
+			"----------\n");
+}
+
+//https://bugs.eclipse.org/bugs/show_bug.cgi?id=398734 - [1.8][compiler] Lambda expression type or return type should be checked against the target functional interface method's result type
+public void test015D() {
+	this.runNegativeTest(
+			new String[] {
+			"X.java",
+			"interface I {\r\n" + 
+			"  int baz();\r\n" + 
+			"}\r\n" + 
+			"public class X {\r\n" + 
+			"  public static void main(String[] args) {\n" + 
+			"    I i1 = () -> {\n" + 
+			"      System.out.println(\"No return\");\n" + 
+			"    }; // Error: Lambda block should return value\n" + 
+			"\n" + 
+			"    I i2 = () -> {\n" + 
+			"      if (Math.random() < 0.5) return 42;\n" + 
+			"    }; // Error: Lambda block doesn't always return a value\n" + 
+			"    I i3 = () -> {\n" + 
+			"      return 42;\n" + 
+			"      System.out.println(\"Dead!\");\n" + 
+			"    }; // Error: Lambda block has dead code\n" + 
+			"  }\n" + 
+			"}"},
+			"----------\n" + 
+			"1. ERROR in X.java (at line 6)\n" + 
+			"	I i1 = () -> {\n" + 
+			"      System.out.println(\"No return\");\n" + 
+			"    }; // Error: Lambda block should return value\n" + 
+			"	       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n" + 
+			"This method must return a result of type int\n" + 
+			"----------\n" + 
+			"2. ERROR in X.java (at line 10)\n" + 
+			"	I i2 = () -> {\n" + 
+			"      if (Math.random() < 0.5) return 42;\n" + 
+			"    }; // Error: Lambda block doesn\'t always return a value\n" + 
+			"	       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n" + 
+			"This method must return a result of type int\n" + 
+			"----------\n" + 
+			"3. ERROR in X.java (at line 15)\n" + 
+			"	System.out.println(\"Dead!\");\n" + 
+			"	^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n" + 
+			"Unreachable code\n" + 
+			"----------\n");
 }
 
 public static Class testClass() {

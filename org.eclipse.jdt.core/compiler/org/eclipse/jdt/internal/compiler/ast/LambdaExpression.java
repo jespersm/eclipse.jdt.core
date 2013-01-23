@@ -15,17 +15,24 @@
 package org.eclipse.jdt.internal.compiler.ast;
 
 import org.eclipse.jdt.internal.compiler.ASTVisitor;
+import org.eclipse.jdt.internal.compiler.flow.ExceptionHandlingFlowContext;
+import org.eclipse.jdt.internal.compiler.flow.FlowContext;
+import org.eclipse.jdt.internal.compiler.flow.FlowInfo;
+import org.eclipse.jdt.internal.compiler.lookup.Binding;
 import org.eclipse.jdt.internal.compiler.lookup.BlockScope;
 import org.eclipse.jdt.internal.compiler.lookup.LambdaScope;
+import org.eclipse.jdt.internal.compiler.lookup.MemberTypeBinding;
 import org.eclipse.jdt.internal.compiler.lookup.MethodBinding;
 import org.eclipse.jdt.internal.compiler.lookup.TagBits;
 import org.eclipse.jdt.internal.compiler.lookup.TypeBinding;
+import org.eclipse.jdt.internal.compiler.lookup.TypeVariableBinding;
+import org.eclipse.jdt.internal.compiler.problem.AbortMethod;
 
 public class LambdaExpression extends FunctionalLiteral {
 	Argument [] arguments;
 	Statement body;
 	LambdaScope scope;
-	TypeDeclaration typeDeclaration;
+	private boolean ignoreFurtherInvestigation;
 	
 	public LambdaExpression(Argument [] arguments, Statement body) {
 		super(0, 0);
@@ -66,6 +73,115 @@ public class LambdaExpression extends FunctionalLiteral {
 		return super.resolveType(this.scope);
 	}
 
+	public FlowInfo analyseCode(
+			BlockScope currentScope,
+			FlowContext flowContext,
+			FlowInfo flowInfo) {
+		return analyseCode(currentScope, flowContext, flowInfo, true);
+	}
+	
+	public FlowInfo analyseCode(BlockScope currentScope, FlowContext flowContext, FlowInfo flowInfo,
+			boolean valueRequired) {
+	
+		if (this.scope.createMethod() == null) return flowInfo;
+		
+		// starting of the code analysis for lambdas
+		try {
+			ExceptionHandlingFlowContext methodContext =
+				new ExceptionHandlingFlowContext(
+					flowContext,
+					this,
+					this.targetBinding.thrownExceptions,
+					null,
+					this.scope,
+					FlowInfo.DEAD_END);
+
+			// nullity and mark as assigned
+			analyseArguments(flowInfo);
+
+			if (this.arguments != null) {
+				for (int i = 0, count = this.arguments.length; i < count; i++) {
+					this.bits |= (this.arguments[i].bits & ASTNode.HasTypeAnnotations);
+					// if this method uses a type parameter declared by the declaring class,
+					// it can't be static. https://bugs.eclipse.org/bugs/show_bug.cgi?id=318682
+					if (this.arguments[i].binding != null && (this.arguments[i].binding.type instanceof TypeVariableBinding)) {
+						Binding declaringElement = ((TypeVariableBinding)this.arguments[i].binding.type).declaringElement;
+						if (this.targetBinding != null && this.targetBinding.declaringClass == declaringElement)
+							this.bits &= ~ASTNode.CanBeStatic;
+					}
+				}
+			}
+			if (this.targetBinding.declaringClass instanceof MemberTypeBinding && !this.targetBinding.declaringClass.isStatic()) {
+				// method of a non-static member type can't be static.
+				this.bits &= ~ASTNode.CanBeStatic;
+			}
+			// propagate to statements
+			if (this.body instanceof Block) {
+				Block block = (Block) this.body;
+				int complaintLevel = (flowInfo.reachMode() & FlowInfo.UNREACHABLE) == 0 ? Statement.NOT_COMPLAINED : Statement.COMPLAINED_FAKE_REACHABLE;
+				for (int i = 0, count = block.statements.length; i < count; i++) {
+					Statement stat = block.statements[i];
+					if ((complaintLevel = stat.complainIfUnreachable(flowInfo, this.scope, complaintLevel, true)) < Statement.COMPLAINED_UNREACHABLE) {
+						flowInfo = stat.analyseCode(this.scope, methodContext, flowInfo);
+					}
+				}
+			} else if (this.body != null) { // Simple expression
+				int complaintLevel = (flowInfo.reachMode() & FlowInfo.UNREACHABLE) == 0 ? Statement.NOT_COMPLAINED : Statement.COMPLAINED_FAKE_REACHABLE;
+				if ((complaintLevel = this.body.complainIfUnreachable(flowInfo, this.scope, complaintLevel, true)) < Statement.COMPLAINED_UNREACHABLE) {
+					flowInfo = this.body.analyseCode(this.scope, methodContext, flowInfo);
+				}
+			}
+			// check for missing returning path
+			TypeBinding returnTypeBinding = this.targetBinding.returnType;
+			if ((returnTypeBinding == TypeBinding.VOID)) {
+				if ((flowInfo.tagBits & FlowInfo.UNREACHABLE_OR_DEAD) == 0) {
+					this.bits |= ASTNode.NeedFreeReturn;
+				}
+			} else {
+				if (flowInfo != FlowInfo.DEAD_END) {
+					this.scope.problemReporter().shouldReturn(returnTypeBinding, this);
+				}
+			}
+			// check unreachable catch blocks
+			// TODO: methodContext.complainIfUnusedExceptionHandlers(this);
+			
+			// check unused parameters
+			this.scope.checkUnusedParameters(this.targetBinding);
+			this.scope.checkUnclosedCloseables(flowInfo, null, null/*don't report against a specific location*/, null);
+		} catch (AbortMethod e) {
+			this.ignoreFurtherInvestigation = true;
+		}
+		return flowInfo;
+	}
+	
+	public boolean ignoreFurtherInvestigation() {
+		return this.ignoreFurtherInvestigation;
+	}
+	
+	/**
+	 * Feed null information from argument annotations into the analysis and mark arguments as assigned.
+	 * 
+	 * This looks a lot like AbstractMethodDeclaration::analyseArguments :-(
+	 */
+	void analyseArguments(FlowInfo flowInfo) {
+		if (this.arguments != null) {
+			for (int i = 0, count = this.arguments.length; i < count; i++) {
+				if (this.targetBinding.parameterNonNullness != null) {
+					// leverage null-info from parameter annotations:
+					Boolean nonNullNess = this.targetBinding.parameterNonNullness[i];
+					if (nonNullNess != null) {
+						if (nonNullNess.booleanValue())
+							flowInfo.markAsDefinitelyNonNull(this.arguments[i].binding);
+						else
+							flowInfo.markPotentiallyNullBit(this.arguments[i].binding);
+					}
+				}
+				// tag parameters as being set:
+				flowInfo.markAsDefinitelyAssigned(this.arguments[i].binding);
+			}
+		}
+	}
+	
 	void checkExpressionResult(TypeBinding lambdaResultType, Expression expression, TypeBinding expressionType) {
 		// this is copied from ReturnStatement::resolve
 		if (lambdaResultType == TypeBinding.VOID) {
@@ -152,6 +268,10 @@ public class LambdaExpression extends FunctionalLiteral {
 		output.append(") -> " ); //$NON-NLS-1$
 		this.body.print(this.body instanceof Block ? tab : 0, output);
 		return output.append(suffix);
+	}
+
+	public Argument [] arguments() {
+		return this.arguments;
 	}
 
 }
