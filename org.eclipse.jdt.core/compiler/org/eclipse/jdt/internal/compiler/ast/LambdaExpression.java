@@ -82,8 +82,9 @@ public class LambdaExpression extends FunctionalLiteral {
 	
 	public FlowInfo analyseCode(BlockScope currentScope, FlowContext flowContext, FlowInfo flowInfo,
 			boolean valueRequired) {
-	
+
 		if (this.scope.createMethod() == null) return flowInfo;
+		FlowInfo bodyFlowInfo = flowInfo.copy();
 		
 		// starting of the code analysis for lambdas
 		try {
@@ -97,7 +98,7 @@ public class LambdaExpression extends FunctionalLiteral {
 					FlowInfo.DEAD_END);
 
 			// nullity and mark as assigned
-			analyseArguments(flowInfo);
+			analyseArguments(bodyFlowInfo);
 
 			if (this.arguments != null) {
 				for (int i = 0, count = this.arguments.length; i < count; i++) {
@@ -116,30 +117,29 @@ public class LambdaExpression extends FunctionalLiteral {
 				this.bits &= ~ASTNode.CanBeStatic;
 			}
 			// propagate to statements
+			int complaintLevel = (bodyFlowInfo.reachMode() & FlowInfo.UNREACHABLE) == 0 ? Statement.NOT_COMPLAINED : Statement.COMPLAINED_FAKE_REACHABLE;
 			if (this.body instanceof Block) {
 				Block block = (Block) this.body;
-				int complaintLevel = (flowInfo.reachMode() & FlowInfo.UNREACHABLE) == 0 ? Statement.NOT_COMPLAINED : Statement.COMPLAINED_FAKE_REACHABLE;
 				for (int i = 0, count = block.statements.length; i < count; i++) {
 					Statement stat = block.statements[i];
-					if ((complaintLevel = stat.complainIfUnreachable(flowInfo, this.scope, complaintLevel, true)) < Statement.COMPLAINED_UNREACHABLE) {
-						flowInfo = stat.analyseCode(this.scope, methodContext, flowInfo);
+					if ((complaintLevel = stat.complainIfUnreachable(bodyFlowInfo, this.scope, complaintLevel, true)) < Statement.COMPLAINED_UNREACHABLE) {
+						bodyFlowInfo = stat.analyseCode(this.scope, methodContext, bodyFlowInfo);
 					}
 				}
-			} else if (this.body != null) { // Simple expression
-				int complaintLevel = (flowInfo.reachMode() & FlowInfo.UNREACHABLE) == 0 ? Statement.NOT_COMPLAINED : Statement.COMPLAINED_FAKE_REACHABLE;
-				if ((complaintLevel = this.body.complainIfUnreachable(flowInfo, this.scope, complaintLevel, true)) < Statement.COMPLAINED_UNREACHABLE) {
-					flowInfo = this.body.analyseCode(this.scope, methodContext, flowInfo);
+				// check for missing returning path
+				TypeBinding returnTypeBinding = this.targetBinding.returnType;
+				if ((returnTypeBinding == TypeBinding.VOID)) {
+					if ((bodyFlowInfo.tagBits & FlowInfo.UNREACHABLE_OR_DEAD) == 0) {
+						this.bits |= ASTNode.NeedFreeReturn;
+					}
+				} else {
+					if (bodyFlowInfo != FlowInfo.DEAD_END) {
+						this.scope.problemReporter().shouldReturn(returnTypeBinding, this);
+					}
 				}
-			}
-			// check for missing returning path
-			TypeBinding returnTypeBinding = this.targetBinding.returnType;
-			if ((returnTypeBinding == TypeBinding.VOID)) {
-				if ((flowInfo.tagBits & FlowInfo.UNREACHABLE_OR_DEAD) == 0) {
-					this.bits |= ASTNode.NeedFreeReturn;
-				}
-			} else {
-				if (flowInfo != FlowInfo.DEAD_END) {
-					this.scope.problemReporter().shouldReturn(returnTypeBinding, this);
+			} else if (this.body != null) { // Simple expression, doesn't need 'return' statements
+				if ((complaintLevel = this.body.complainIfUnreachable(bodyFlowInfo, this.scope, complaintLevel, true)) < Statement.COMPLAINED_UNREACHABLE) {
+					bodyFlowInfo = this.body.analyseCode(this.scope, methodContext, bodyFlowInfo);
 				}
 			}
 			// check unreachable catch blocks
@@ -147,11 +147,11 @@ public class LambdaExpression extends FunctionalLiteral {
 			
 			// check unused parameters
 			this.scope.checkUnusedParameters(this.targetBinding);
-			this.scope.checkUnclosedCloseables(flowInfo, null, null/*don't report against a specific location*/, null);
+			this.scope.checkUnclosedCloseables(bodyFlowInfo, null, null/*don't report against a specific location*/, null);
 		} catch (AbortMethod e) {
 			this.ignoreFurtherInvestigation = true;
 		}
-		return flowInfo;
+		return flowInfo; // No, not the copy, since the flow of the lambda doesn't interfere with the rest, it's just a literal
 	}
 	
 	public boolean ignoreFurtherInvestigation() {

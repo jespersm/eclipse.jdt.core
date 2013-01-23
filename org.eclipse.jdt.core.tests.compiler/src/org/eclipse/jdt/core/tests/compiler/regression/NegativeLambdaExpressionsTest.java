@@ -552,6 +552,16 @@ public void test015D() {
 			"      System.out.println(\"Dead!\");\n" + 
 			"    }; // Error: Lambda block has dead code\n" + 
 			"  }\n" + 
+			"  public static I doesFlowInfoEscape() {\n" + 
+			"    I i1 = () -> {\n" + 
+			"      return 42;\n" + 
+			"    };\n" + 
+			"    return i1; // Must not complain about unreachable code!\n" + 
+			"  }\n" + 
+			"  public static I areExpresionsCheckedForReturns() {\n" + 
+			"    I i1 = () -> 42;  // Must not complain about missing return!\n" + 
+			"    return i1;\n" + 
+			"  }\n" + 
 			"}"},
 			"----------\n" + 
 			"1. ERROR in X.java (at line 6)\n" + 
