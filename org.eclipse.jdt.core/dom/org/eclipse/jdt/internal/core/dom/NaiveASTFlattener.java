@@ -1013,6 +1013,22 @@ public class NaiveASTFlattener extends ASTVisitor {
 		}
 		node.getName().accept(this);
 		this.buffer.append("(");//$NON-NLS-1$
+		if (node.getAST().apiLevel() >= AST.JLS8) {
+			AnnotatableType receiverType = node.getReceiverType();
+			if (receiverType != null) {
+				receiverType.accept(this);
+				this.buffer.append(' ');
+				SimpleName qualifier = node.getReceiverQualifier();
+				if (qualifier != null) {
+					qualifier.accept(this);
+					this.buffer.append('.');
+				}
+				this.buffer.append("this"); //$NON-NLS-1$
+				if (node.parameters().size() > 0) {
+					this.buffer.append(',');
+				}
+			}
+		}
 		for (Iterator it = node.parameters().iterator(); it.hasNext(); ) {
 			SingleVariableDeclaration v = (SingleVariableDeclaration) it.next();
 			v.accept(this);
@@ -1299,8 +1315,17 @@ public class NaiveASTFlattener extends ASTVisitor {
 	 * @see ASTVisitor#visit(SimpleType)
 	 */
 	public boolean visit(SimpleType node) {
-		visitTypeAnnotations(node);
-		node.getName().accept(this);
+		Name name = node.getName();
+		if (name.isQualifiedName()) {
+			QualifiedName qualifiedName = (QualifiedName) name;
+			qualifiedName.getQualifier().accept(this);
+			this.buffer.append(".");//$NON-NLS-1$
+			visitTypeAnnotations(node);
+			qualifiedName.getName().accept(this);
+		} else {
+			visitTypeAnnotations(node);
+			node.getName().accept(this);			
+		}
 		return false;
 	}
 
